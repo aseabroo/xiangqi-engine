@@ -142,7 +142,7 @@ def test_wrong_color_cannot_move():
     assert not game.make_move(p(3, 0), p(4, 0))
 
 
-def test_capturing_general_ends_game():
+def test_general_is_not_capturable():
     board = Board({
         p(9, 4): Piece(Color.RED, PieceType.GENERAL),
         p(0, 4): Piece(Color.BLACK, PieceType.GENERAL),
@@ -150,10 +150,37 @@ def test_capturing_general_ends_game():
         p(5, 4): Piece(Color.BLACK, PieceType.SOLDIER),
     })
     game = Game(board, turn=Color.RED)
-    # Move the rook laterally first so the board position is not an immediate flying-general check.
-    board.pieces.pop(p(5, 4))
-    board.pieces[p(5, 3)] = Piece(Color.BLACK, PieceType.SOLDIER)
-    assert game.make_move(p(1, 4), p(0, 4))
+    assert not game.is_legal_move(p(1, 4), p(0, 4))
+
+
+def test_checkmate_ends_game_without_general_capture():
+    board = Board({
+        p(9, 4): Piece(Color.RED, PieceType.GENERAL),
+        p(0, 4): Piece(Color.BLACK, PieceType.GENERAL),
+        p(2, 4): Piece(Color.RED, PieceType.ROOK),
+        p(1, 3): Piece(Color.RED, PieceType.ROOK),
+        p(1, 5): Piece(Color.RED, PieceType.ROOK),
+    })
+    game = Game(board, turn=Color.RED)
+    assert game.make_move(p(2, 4), p(1, 4))
+    assert game.is_in_check(Color.BLACK)
+    assert game.legal_moves(Color.BLACK) == []
+    assert game.state is GameState.RED_WON
+
+
+def test_stalemate_is_a_loss_in_xiangqi():
+    board = Board({
+        p(9, 4): Piece(Color.RED, PieceType.GENERAL),
+        p(0, 4): Piece(Color.BLACK, PieceType.GENERAL),
+        p(5, 4): Piece(Color.RED, PieceType.SOLDIER),
+        p(1, 3): Piece(Color.RED, PieceType.ROOK),
+        p(1, 5): Piece(Color.RED, PieceType.ROOK),
+        p(5, 2): Piece(Color.RED, PieceType.HORSE),
+    })
+    game = Game(board, turn=Color.RED)
+    assert game.make_move(p(5, 2), p(3, 3))
+    assert not game.is_in_check(Color.BLACK)
+    assert game.legal_moves(Color.BLACK) == []
     assert game.state is GameState.RED_WON
 
 
