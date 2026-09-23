@@ -61,3 +61,38 @@ class Piece:
         }
         symbol = symbols[self.kind]
         return symbol if self.color is Color.RED else symbol.lower()
+
+
+@dataclass(frozen=True, slots=True)
+class MoveRecord:
+    mover: Color
+    piece: PieceType
+    start: Position
+    end: Position
+    captured: PieceType | None = None
+    gave_check: bool = False
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "mover": self.mover.value,
+            "piece": self.piece.value,
+            "start": str(self.start),
+            "end": str(self.end),
+            "captured": self.captured.value if self.captured else None,
+            "gave_check": self.gave_check,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> "MoveRecord":
+        try:
+            captured = data.get("captured")
+            return cls(
+                mover=Color(str(data["mover"])),
+                piece=PieceType(str(data["piece"])),
+                start=Position.parse(str(data["start"])),
+                end=Position.parse(str(data["end"])),
+                captured=PieceType(str(captured)) if captured is not None else None,
+                gave_check=bool(data.get("gave_check", False)),
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("Invalid move-history record.") from error
