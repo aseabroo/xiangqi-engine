@@ -53,6 +53,10 @@ Coordinates use algebraic-style files `a-i` and ranks `0-9`. For example:
 a9 a8
 ```
 
+## Scope and known limitation
+
+Core board movement, check, self-check, checkmate, and stalemate-as-loss are implemented. Tournament-specific repetition and perpetual-check adjudication are not yet implemented; those rules require move-history policy beyond basic board legality.
+
 ## Engineering goals
 
 This is intentionally an engine first. The priorities are deterministic state transitions, rules that can be tested independently, and a domain model that can later support a web UI, move notation, persistence, or computer play without rewriting the core.
