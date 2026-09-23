@@ -39,6 +39,87 @@ class Board:
     def copy(self) -> "Board":
         return Board(self.pieces.copy())
 
+    def validate(self) -> None:
+        """Validate structural board invariants for persisted game states."""
+        limits = {
+            PieceType.GENERAL: 1,
+            PieceType.ADVISOR: 2,
+            PieceType.ELEPHANT: 2,
+            PieceType.HORSE: 2,
+            PieceType.ROOK: 2,
+            PieceType.CANNON: 2,
+            PieceType.SOLDIER: 5,
+        }
+
+        for color in Color:
+            colored = [piece for piece in self.pieces.values() if piece.color is color]
+            if len(colored) > 16:
+                raise ValueError(f"Too many {color.value} pieces.")
+
+            for kind, limit in limits.items():
+                count = sum(piece.kind is kind for piece in colored)
+                if count > limit:
+                    raise ValueError(f"Too many {color.value} {kind.value}s.")
+
+            general = self.general_position(color)
+            if general is None:
+                raise ValueError(f"Missing {color.value} general.")
+            palace_rows = range(7, 10) if color is Color.RED else range(0, 3)
+            if general.row not in palace_rows or not 3 <= general.col <= 5:
+                raise ValueError(f"{color.value.capitalize()} general is outside the palace.")
+
+        for position, piece in self.pieces.items():
+            if piece.kind is PieceType.ADVISOR:
+                palace_rows = range(7, 10) if piece.color is Color.RED else range(0, 3)
+                if position.row not in palace_rows or not 3 <= position.col <= 5:
+                    raise ValueError("Advisor is outside its palace.")
+            if piece.kind is PieceType.ELEPHANT:
+                if piece.color is Color.RED and position.row < 5:
+                    raise ValueError("Red elephant crossed the river.")
+                if piece.color is Color.BLACK and position.row > 4:
+                    raise ValueError("Black elephant crossed the river.")
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "pieces": [
+                {
+                    "position": str(position),
+                    "color": piece.color.value,
+                    "kind": piece.kind.value,
+                }
+                for position, piece in sorted(
+                    self.pieces.items(), key=lambda item: (item[0].row, item[0].col)
+                )
+            ]
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> "Board":
+        try:
+            entries = data["pieces"]
+            if not isinstance(entries, list):
+                raise TypeError
+            pieces: dict[Position, Piece] = {}
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    raise TypeError
+                position = Position.parse(str(entry["position"]))
+                if position in pieces:
+                    raise ValueError("Duplicate board position.")
+                pieces[position] = Piece(
+                    Color(str(entry["color"])),
+                    PieceType(str(entry["kind"])),
+                )
+            board = cls(pieces)
+            board.validate()
+            return board
+        except (KeyError, TypeError, ValueError) as error:
+            if isinstance(error, ValueError) and str(error) not in {
+                "'pieces'",
+            }:
+                raise
+            raise ValueError("Invalid board data.") from error
+
     def piece_at(self, position: Position) -> Piece | None:
         return self.pieces.get(position)
 
