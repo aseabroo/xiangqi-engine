@@ -19,7 +19,10 @@ The earlier version was a substantial learning project, but it mixed board mutat
 - Check detection
 - Rejection of moves that leave your own general in check
 - Checkmate and stalemate-as-loss detection
-- Simple coordinate-based CLI
+- Move history with capture/check metadata
+- JSON serialization plus save/load support
+- Structural validation for persisted board states
+- Simple coordinate-based CLI with `history`, `save`, and `load` commands
 - Pytest regression suite
 
 ## Project layout
@@ -55,11 +58,11 @@ a9 a8
 
 ## Scope and known limitation
 
-Core board movement, check, self-check, checkmate, and stalemate-as-loss are implemented. Tournament-specific repetition and perpetual-check adjudication are not yet implemented; those rules require move-history policy beyond basic board legality.
+Core board movement, check, self-check, checkmate, stalemate-as-loss, move history, and JSON persistence are implemented. The move history intentionally provides the foundation for future repetition analysis, but tournament-specific repetition and perpetual-check adjudication are not implemented.
 
 ## Engineering goals
 
-This is intentionally an engine first. The priorities are deterministic state transitions, rules that can be tested independently, and a domain model that can later support a web UI, move notation, persistence, or computer play without rewriting the core.
+This is intentionally an engine first. The priorities are deterministic state transitions, rules that can be tested independently, and a domain model that can later support a web UI, richer move notation, or computer play without rewriting the core.
 
 ## Provenance
 
