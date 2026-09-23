@@ -30,7 +30,7 @@ class Game:
             return True
 
         for start, piece in board.pieces.items():
-            if piece.color is color.opponent and board.piece_rule_allows(start, general, attack=True):
+            if piece.color is color.opponent and board.piece_rule_allows(start, general):
                 return True
         return False
 
@@ -39,6 +39,13 @@ class Game:
         piece = self.board.piece_at(start)
         if piece is None or piece.color is not color:
             return False
+
+        target = self.board.piece_at(end)
+        if target is not None and target.kind is PieceType.GENERAL:
+            # Xiangqi ends when a side has no legal reply. The engine models
+            # check/checkmate rather than allowing the general to be captured.
+            return False
+
         if not self.board.piece_rule_allows(start, end):
             return False
 
@@ -62,14 +69,12 @@ class Game:
         if self.state is not GameState.ACTIVE or not self.is_legal_move(start, end):
             return False
 
-        captured = self.board.move(start, end)
+        self.board.move(start, end)
         mover = self.turn
-
-        if captured is not None and captured.kind is PieceType.GENERAL:
-            self.state = GameState.RED_WON if mover is Color.RED else GameState.BLACK_WON
-            return True
-
         self.turn = mover.opponent
+
+        # In Xiangqi, both checkmate and stalemate are losses for the player
+        # with no legal move.
         if not self.legal_moves(self.turn):
             self.state = GameState.RED_WON if mover is Color.RED else GameState.BLACK_WON
         return True
