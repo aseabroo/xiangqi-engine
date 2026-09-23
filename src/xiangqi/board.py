@@ -69,7 +69,7 @@ class Board:
             )
         raise ValueError("Path count requires an orthogonal move.")
 
-    def piece_rule_allows(self, start: Position, end: Position, *, attack: bool = False) -> bool:
+    def piece_rule_allows(self, start: Position, end: Position) -> bool:
         piece = self.piece_at(start)
         if piece is None or start == end:
             return False
