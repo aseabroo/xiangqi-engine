@@ -1,6 +1,6 @@
 import pytest
 
-from xiangqi import Board, Color, Game, GameState, Piece, PieceType, Position
+from xiangqi import Board, Color, Game, GameState, MoveRecord, Piece, PieceType, Position
 
 
 def p(row, col):
@@ -188,3 +188,82 @@ def test_stalemate_is_a_loss_in_xiangqi():
 def test_invalid_coordinates_raise(bad):
     with pytest.raises(ValueError):
         Position.parse(bad)
+
+
+def test_move_history_records_check_and_capture():
+    board = Board({
+        p(9, 4): Piece(Color.RED, PieceType.GENERAL),
+        p(0, 3): Piece(Color.BLACK, PieceType.GENERAL),
+        p(5, 4): Piece(Color.RED, PieceType.ROOK),
+        p(5, 3): Piece(Color.BLACK, PieceType.SOLDIER),
+    })
+    game = Game(board, turn=Color.RED)
+    assert game.make_move(p(5, 4), p(5, 3))
+    record = game.history[-1]
+    assert record == MoveRecord(
+        mover=Color.RED,
+        piece=PieceType.ROOK,
+        start=p(5, 4),
+        end=p(5, 3),
+        captured=PieceType.SOLDIER,
+        gave_check=True,
+    )
+
+
+def test_game_json_round_trip_preserves_state_and_history():
+    game = Game.new()
+    assert game.make_move(p(6, 0), p(5, 0))
+    assert game.make_move(p(3, 0), p(4, 0))
+
+    restored = Game.from_json(game.to_json())
+    assert restored.turn is game.turn
+    assert restored.state is game.state
+    assert restored.board.pieces == game.board.pieces
+    assert restored.history == game.history
+
+
+def test_save_and_load_round_trip(tmp_path):
+    game = Game.new()
+    assert game.make_move(p(6, 2), p(5, 2))
+    path = tmp_path / "game.json"
+    game.save(path)
+
+    restored = Game.load(path)
+    assert restored.to_dict() == game.to_dict()
+
+
+def test_board_validation_rejects_missing_general():
+    board = Board({
+        p(9, 4): Piece(Color.RED, PieceType.GENERAL),
+    })
+    with pytest.raises(ValueError, match="Missing black general"):
+        board.validate()
+
+
+def test_board_validation_rejects_general_outside_palace():
+    board = Board({
+        p(9, 4): Piece(Color.RED, PieceType.GENERAL),
+        p(3, 4): Piece(Color.BLACK, PieceType.GENERAL),
+    })
+    with pytest.raises(ValueError, match="outside the palace"):
+        board.validate()
+
+
+def test_board_validation_rejects_too_many_piece_types():
+    board = Board({
+        p(9, 4): Piece(Color.RED, PieceType.GENERAL),
+        p(0, 4): Piece(Color.BLACK, PieceType.GENERAL),
+        p(8, 0): Piece(Color.RED, PieceType.ROOK),
+        p(8, 1): Piece(Color.RED, PieceType.ROOK),
+        p(8, 2): Piece(Color.RED, PieceType.ROOK),
+    })
+    with pytest.raises(ValueError, match="Too many red rooks"):
+        board.validate()
+
+
+def test_deserialization_rejects_duplicate_positions():
+    data = Board.initial().to_dict()
+    pieces = data["pieces"]
+    pieces.append(dict(pieces[0]))
+    with pytest.raises(ValueError, match="Duplicate board position"):
+        Board.from_dict(data)
