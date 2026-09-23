@@ -2,7 +2,7 @@
 
 A modern, test-driven Xiangqi (Chinese chess) engine in Python.
 
-This project is a ground-up rebuild of a 2020 coursework project. The original implementation is preserved separately in `python-learning-archive`; this repository focuses on clearer architecture, explicit game state, complete move validation, and regression tests for difficult rules.
+This project is a ground-up rebuild of a 2020 coursework project. The original implementation is preserved separately in `python-learning-archive`; this repository focuses on clearer architecture, explicit game state, core move validation, and regression tests for difficult rules.
 
 ## Why this rebuild exists
 
@@ -18,7 +18,7 @@ The earlier version was a substantial learning project, but it mixed board mutat
 - Flying-general rule
 - Check detection
 - Rejection of moves that leave your own general in check
-- Checkmate/stalemate detection
+- Checkmate and stalemate-as-loss detection
 - Simple coordinate-based CLI
 - Pytest regression suite
 
